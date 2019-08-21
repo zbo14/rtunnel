@@ -12,17 +12,35 @@ Then clone the repo and `[sudo] sh install.sh`.
 
 ## Usage
 
+```
+Usage: [PARAMS=] rtunnel <command> [ARGS]
+
+Commands:
+  build   Build the Docker image for the daemon
+  init    Generate SSH keys and create daemon directories/files
+  open    Open a reverse SSH tunnel to a daemon
+  ssh     SSH into a host that opened a reverse tunnel to a daemon
+  start   Start a Docker container running the daemon
+  stop    Stop/remove the Docker container and its volumes
+```
+
 ### Initialize
 
 `$ rtunnel init`
 
-Generate SSH keys and create directories and the `authorized_keys` file for the daemon.
+Generate SSH keys for the host, daemon, and client. Also create the daemon directories and `authorized_keys` file.
 
 The directories will be mounted as volumes inside the container once it starts.
 
 This command only needs to run once.
 
 ### Daemon
+
+#### Build
+
+`$ rtunnel build`
+
+Build the Docker image for the daemon.
 
 #### Start
 
@@ -64,7 +82,7 @@ SSH into a host that `open`ed a reverse tunnel to the daemon.
 
 The client SSHes into the daemon and then into the host as `USER` over a local socket on `LPORT`.
 
-Your public key (`~/.ssh/rtunnel.pub`) should be in the daemon's `authorized_keys` *and* the host's `authorized_keys`.
+Your public key (`~/.ssh/rtunnel.pub`) should be in the daemon's `authorized_keys` (`/home/rtunnel/.ssh/authorized_keys`) *and* in the host's `authorized_keys` (`/home/$USER/.ssh/authorized_keys` or `/Users/$USER/.ssh/authorized_keys` on macOS).
 
 ## Contributing
 

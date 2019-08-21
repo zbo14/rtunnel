@@ -88,12 +88,13 @@ case $1 in
 
   *)
     echo $'Usage: [PARAMS=] rtunnel <command> [ARGS]
+
 Commands:
-  build  Build the Docker image for the daemon
-  init   Create directories, SSH keys, and authorized_keys file
-  open   Open a reverse SSH tunnel to a daemon
-  ssh    SSH into another rtunnel instance that opened a reverse tunnel to a daemon
-  start  Start a Docker container running the daemon
-  stop  Stop/remove the Docker container and its volumes'
+  build   Build the Docker image for the daemon
+  init    Generate SSH keys and create daemon directories/files
+  open    Open a reverse SSH tunnel to a daemon
+  ssh     SSH into a host that opened a reverse tunnel to a daemon
+  start   Start a Docker container running the daemon
+  stop    Stop/remove the Docker container and its volumes'
     ;;
 esac
