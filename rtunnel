@@ -1,0 +1,99 @@
+#!/bin/bash -e
+
+DIR=$(dirname "$(readlink $0)")
+cd $DIR
+
+set +e
+
+case $1 in
+  build)
+    docker build --no-cache -t rtunnel .
+    ;;
+
+  init)
+    mkdir -p home{,/rtunnel{,/.ssh}} root{,/.ssh}
+    touch home/rtunnel/.ssh/authorized_keys
+    ssh-keygen -t ed25519 -f root/.ssh/id_ed25519 -N ''
+    ssh-keygen -t ed25519 -f ~/.ssh/rtunnel -N ''
+    ;;
+
+  open)
+    if [[ -z $ADDR || -z $EPORT || -z $FPORT ]]
+    then
+      echo "Usage: ADDR= EPORT= FPORT= rtunnel <open>"
+      exit
+    fi
+
+    ssh \
+      -4N \
+      -R $FPORT:127.0.0.1:22 \
+      -i ~/.ssh/rtunnel \
+      -o IdentitiesOnly=yes \
+      -o ServerAliveInterval=15 \
+      -p $EPORT \
+      rtunnel@$ADDR
+    ;;
+
+  ssh)
+    if [[ -z $ADDR || -z $EPORT || -z $FPORT || -z $LPORT || -z $USER ]]
+    then
+      echo "Usage: ADDR= EPORT= FPORT= LPORT= USER= rtunnel <ssh>"
+      exit
+    fi
+
+    ssh \
+      -4Nf \
+      -L $LPORT:0.0.0.0:$FPORT \
+      -i ~/.ssh/rtunnel \
+      -o IdentitiesOnly=yes \
+      -o ServerAliveInterval=15 \
+      -p $EPORT \
+      rtunnel@$ADDR
+
+    ssh \
+      -4 \
+      -i ~/.ssh/rtunnel \
+      -o IdentitiesOnly=yes \
+      -o ServerAliveInterval=15 \
+      -p $LPORT \
+      $USER@127.0.0.1
+
+    kill -9 "$(lsof -ti tcp:$LPORT)"
+    ;;
+
+  start)
+    if [[ -z $2 ]]
+    then
+      echo "Usage: rtunnel <start> PORT"
+      exit
+    fi
+
+    docker run \
+      -d \
+      -e PORT=$2 \
+      --init \
+      --name rtunnel \
+      -p $2:$2 \
+      --restart=always \
+      -v $DIR/home/rtunnel/.ssh:/home/rtunnel/.ssh \
+      -v $DIR/root/.ssh:/root/.ssh:ro \
+      rtunnel
+
+    docker exec -it rtunnel passwd rtunnel
+    ;;
+
+  stop)
+    docker rm -fv rtunnel
+    ;;
+
+  *)
+    echo $'Usage: [PARAMS=] rtunnel <command> [ARGS]
+Commands:
+  build  Build the Docker image for the daemon
+  init   Create directories, SSH keys, and authorized_keys file
+  open   Open a reverse SSH tunnel to a daemon
+  ssh    SSH into another rtunnel instance that opened a reverse tunnel to a daemon
+  start  Start a Docker container running the daemon
+  stop  Stop/remove the Docker container and its volumes'
+    ;;
+esac
